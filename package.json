@@ -17,21 +17,29 @@
     "directories": {
       "output": "release"
     },
-    "asarUnpack": [
-      "node_modules/exiftool-vendored.pl/**/*",
-      "node_modules/exiftool-vendored.exe/**/*"
-    ],
     "files": [
       "dist/**/*",
       "dist-electron/**/*"
     ],
     "mac": {
+      "asarUnpack": [
+        "node_modules/exiftool-vendored.pl/**/*"
+      ],
+      "files": [
+        "!node_modules/exiftool-vendored.exe/**/*"
+      ],
       "target": [
         "dmg"
       ],
       "category": "public.app-category.photography"
     },
     "win": {
+      "asarUnpack": [
+        "node_modules/exiftool-vendored.exe/**/*"
+      ],
+      "files": [
+        "!node_modules/exiftool-vendored.pl/**/*"
+      ],
       "target": [
         {
           "target": "nsis",
