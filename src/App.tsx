@@ -18,6 +18,74 @@ interface PreviewData {
   orientation: number
 }
 
+type Locale = 'ko' | 'en'
+
+const messages = {
+  ko: {
+    welcomeSubtitle: '사진 폴더를 선택하여 마음에 드는 사진만 골라내기.',
+    openPhotoFolder: '사진 폴더 열기',
+    back: '← 뒤로',
+    progress: (current: number, total: number, selectedOnly: boolean) =>
+      `${total}개 묶음 중 ${current}번째${selectedOnly ? ' · 선택만 보기' : ''}`,
+    jpgFirst: 'JPG 우선보기',
+    rawFirst: 'RAW 우선보기',
+    selectedOnly: '선택된 사진만 보기',
+    exportSelected: (count: number) => `선택 항목 내보내기 (${count})`,
+    previewUnavailable: '미리보기를 불러올 수 없습니다',
+    selected: '선택됨 (P)',
+    pick: '선택 (Space)',
+    selectedPhotos: '선택된 사진',
+    selectedCount: (count: number) => `${count}개`,
+    noSelectedPhotos: '선택된 사진 없음',
+    exportTitle: '사진 내보내기',
+    exportDescription: (count: number) => `총 ${count}개의 사진 묶음이 선택되었습니다.`,
+    exportBothTitle: '모두 복사 (RAW + JPG)',
+    exportBothDescription: '선택된 사진의 원본과 JPG 파일이 모두 복사됩니다.',
+    exportRawTitle: 'RAW 파일만 복사',
+    exportRawDescription: '보정을 위해 용량이 큰 원본(RAW) 파일만 복사합니다.',
+    exportJpgTitle: 'JPG 파일만 복사',
+    exportJpgDescription: '가벼운 JPG 파일만 추출합니다.',
+    cancel: '취소',
+    chooseFolderAndCopy: '폴더 선택 및 복사',
+    exportEmptyAlert: '추출할 파일이 없습니다. (조건에 맞는 선택된 사진 없음)',
+    exportSuccessAlert: (count: number) => `총 ${count}개의 파일이 성공적으로 복사되었습니다!`,
+  },
+  en: {
+    welcomeSubtitle: 'Open a photo folder and keep only the shots you like.',
+    openPhotoFolder: 'Open Photo Folder',
+    back: '← Back',
+    progress: (current: number, total: number, selectedOnly: boolean) =>
+      `${current} of ${total} groups${selectedOnly ? ' · Selected only' : ''}`,
+    jpgFirst: 'Prefer JPG',
+    rawFirst: 'Prefer RAW',
+    selectedOnly: 'Selected Only',
+    exportSelected: (count: number) => `Export Selected (${count})`,
+    previewUnavailable: 'Preview unavailable',
+    selected: 'Selected (P)',
+    pick: 'Pick (Space)',
+    selectedPhotos: 'Selected Photos',
+    selectedCount: (count: number) => `${count}`,
+    noSelectedPhotos: 'No selected photos',
+    exportTitle: 'Export Photos',
+    exportDescription: (count: number) => `${count} photo groups selected.`,
+    exportBothTitle: 'Copy All (RAW + JPG)',
+    exportBothDescription: 'Copy both the original RAW files and JPG files for selected photos.',
+    exportRawTitle: 'Copy RAW Only',
+    exportRawDescription: 'Copy only the larger original RAW files for editing.',
+    exportJpgTitle: 'Copy JPG Only',
+    exportJpgDescription: 'Copy only lightweight JPG files.',
+    cancel: 'Cancel',
+    chooseFolderAndCopy: 'Choose Folder and Copy',
+    exportEmptyAlert: 'No files to export. No selected photos match this option.',
+    exportSuccessAlert: (count: number) => `${count} files copied successfully.`,
+  },
+} satisfies Record<Locale, Record<string, string | ((...args: never[]) => string)>>
+
+const getPreferredLocale = (): Locale => {
+  const languages = navigator.languages?.length ? navigator.languages : [navigator.language]
+  return languages.some(language => language?.toLowerCase().startsWith('ko')) ? 'ko' : 'en'
+}
+
 const CanvasRotatedImage = ({ src, orientation, className }: { src: string, orientation: number, className?: string }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
@@ -78,6 +146,7 @@ const RotatedImage = ({ src, orientation, className }: { src: string, orientatio
 }
 
 function App() {
+  const [locale] = useState<Locale>(getPreferredLocale)
   const [folder, setFolder] = useState<string | null>(null)
   const [imageGroups, setImageGroups] = useState<ImageGroup[]>([])
   const [currentIndex, setCurrentIndex] = useState(0)
@@ -91,6 +160,11 @@ function App() {
   const [showSelectedOnly, setShowSelectedOnly] = useState(false)
   const [showExportModal, setShowExportModal] = useState(false)
   const [exportMode, setExportMode] = useState<'both' | 'raw' | 'jpg'>('both')
+  const t = messages[locale]
+
+  useEffect(() => {
+    document.documentElement.lang = locale
+  }, [locale])
 
   const openFolder = async () => {
     // @ts-ignore
@@ -293,7 +367,7 @@ function App() {
     })
 
     if (filesToExport.length === 0) {
-      alert("추출할 파일이 없습니다. (조건에 맞는 선택된 사진 없음)")
+      alert(t.exportEmptyAlert)
       return
     }
 
@@ -304,7 +378,7 @@ function App() {
       mode: exportMode
     })
 
-    alert(`총 ${copiedCount}개의 파일이 성공적으로 복사되었습니다!`)
+    alert(t.exportSuccessAlert(copiedCount))
     setShowExportModal(false)
   }
 
@@ -315,19 +389,20 @@ function App() {
       <div className="flex flex-col items-center justify-center h-screen bg-zinc-50 text-zinc-900">
         <h1 className="text-4xl font-extrabold mb-4 tracking-tighter">Photoselect</h1>
         <p className="text-zinc-500 mb-8 max-w-md text-center text-sm">
-          사진 폴더를 선택하여 마음에 드는 사진만 골라내기.
+          {t.welcomeSubtitle}
         </p>
         <button
           onClick={openFolder}
           className="bg-zinc-900 hover:bg-black text-white px-8 py-4 rounded-xl font-medium transition-all active:scale-95 shadow-lg"
         >
-          사진 폴더 열기
+          {t.openPhotoFolder}
         </button>
       </div>
     )
   }
 
   const currentGroup = imageGroups[currentIndex]
+  const folderName = folder.split(/[\\/]/).pop() || folder
   const selectedItems = imageGroups.flatMap((group, index) => group.selected ? [{ group, index }] : [])
   const selectedVisiblePosition = selectedItems.findIndex(item => item.index === currentIndex)
   const visiblePosition = showSelectedOnly ? Math.max(selectedVisiblePosition + 1, 1) : currentIndex + 1
@@ -357,13 +432,13 @@ function App() {
       <header className="h-16 bg-white border-b border-zinc-200 flex items-center justify-between px-6 shrink-0 z-10">
         <div className="flex items-center gap-4">
           <button onClick={() => setFolder(null)} className="text-zinc-500 hover:text-black font-medium text-sm transition-colors">
-            ← 뒤로
+            {t.back}
           </button>
           <div className="h-4 w-px bg-zinc-300"></div>
           <div className="flex flex-col">
-            <span className="text-sm font-bold truncate max-w-[200px]" title={folder}>{folder.split('/').pop() || folder}</span>
+            <span className="text-sm font-bold truncate max-w-[200px]" title={folder}>{folderName}</span>
             <span className="text-xs text-zinc-500 font-medium">
-              {visibleTotal}개 묶음 중 {visiblePosition}번째{showSelectedOnly ? ' · 선택만 보기' : ''}
+              {t.progress(visiblePosition, visibleTotal, showSelectedOnly)}
             </span>
           </div>
         </div>
@@ -374,13 +449,13 @@ function App() {
               onClick={() => setViewPriority('jpg')}
               className={`px-4 py-1.5 text-xs font-bold rounded-md transition-colors ${viewPriority === 'jpg' ? 'bg-white shadow-sm text-black' : 'text-zinc-500 hover:text-zinc-800'}`}
             >
-              JPG 우선보기
+              {t.jpgFirst}
             </button>
             <button
               onClick={() => setViewPriority('raw')}
               className={`px-4 py-1.5 text-xs font-bold rounded-md transition-colors ${viewPriority === 'raw' ? 'bg-white shadow-sm text-black' : 'text-zinc-500 hover:text-zinc-800'}`}
             >
-              RAW 우선보기
+              {t.rawFirst}
             </button>
           </div>
 
@@ -396,7 +471,7 @@ function App() {
                 : 'bg-zinc-100 text-zinc-400 cursor-not-allowed'
               }`}
           >
-            선택된 사진만 보기
+            {t.selectedOnly}
           </button>
 
           <button
@@ -407,7 +482,7 @@ function App() {
               : 'bg-zinc-100 text-zinc-400 cursor-not-allowed'
               }`}
           >
-            선택 항목 내보내기 ({selectedCount})
+            {t.exportSelected(selectedCount)}
           </button>
         </div>
       </header>
@@ -432,7 +507,7 @@ function App() {
               <svg className="w-16 h-16 mb-4 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
-              <p className="font-medium">미리보기를 불러올 수 없습니다</p>
+              <p className="font-medium">{t.previewUnavailable}</p>
             </div>
           )}
 
@@ -461,12 +536,12 @@ function App() {
                   <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                   </svg>
-                  SELECTED (P)
+                  {t.selected}
                 </>
               ) : (
                 <>
                   <div className="w-3 h-3 rounded-full border border-current"></div>
-                  PICK (Space)
+                  {t.pick}
                 </>
               )}
             </button>
@@ -476,15 +551,15 @@ function App() {
         <aside className="w-60 bg-white border-l border-zinc-200 shrink-0 flex flex-col">
           <div className="h-14 px-4 border-b border-zinc-200 flex items-center justify-between">
             <div>
-              <div className="text-sm font-extrabold text-zinc-900">선택된 사진</div>
-              <div className="text-xs text-zinc-500">{selectedCount}개</div>
+              <div className="text-sm font-extrabold text-zinc-900">{t.selectedPhotos}</div>
+              <div className="text-xs text-zinc-500">{t.selectedCount(selectedCount)}</div>
             </div>
           </div>
 
           <div className="flex-1 overflow-y-auto p-2">
             {selectedItems.length === 0 ? (
               <div className="h-full flex items-center justify-center text-xs font-medium text-zinc-400">
-                선택된 사진 없음
+                {t.noSelectedPhotos}
               </div>
             ) : (
               selectedItems.map(({ group, index }, selectedIndex) => (
@@ -545,31 +620,31 @@ function App() {
         <div className="fixed inset-0 bg-zinc-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden animate-in fade-in zoom-in-95 duration-200">
             <div className="p-8">
-              <h2 className="text-2xl font-extrabold mb-2 tracking-tight">사진 내보내기</h2>
-              <p className="text-zinc-500 text-sm mb-6">총 {selectedCount}개의 사진 묶음이 선택되었습니다.</p>
+              <h2 className="text-2xl font-extrabold mb-2 tracking-tight">{t.exportTitle}</h2>
+              <p className="text-zinc-500 text-sm mb-6">{t.exportDescription(selectedCount)}</p>
 
               <div className="space-y-3 mb-8">
                 <label className={`flex items-start gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${exportMode === 'both' ? 'border-black bg-zinc-50' : 'border-zinc-200 hover:border-zinc-300'}`}>
                   <input type="radio" name="exportMode" checked={exportMode === 'both'} onChange={() => setExportMode('both')} className="mt-1.5 w-4 h-4 text-black border-zinc-300 focus:ring-black" />
                   <div>
-                    <div className="font-bold text-zinc-900">모두 복사 (RAW + JPG)</div>
-                    <div className="text-xs text-zinc-500 mt-1 leading-relaxed">선택된 사진의 원본과 JPG 파일이 모두 복사됩니다.</div>
+                    <div className="font-bold text-zinc-900">{t.exportBothTitle}</div>
+                    <div className="text-xs text-zinc-500 mt-1 leading-relaxed">{t.exportBothDescription}</div>
                   </div>
                 </label>
 
                 <label className={`flex items-start gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${exportMode === 'raw' ? 'border-black bg-zinc-50' : 'border-zinc-200 hover:border-zinc-300'}`}>
                   <input type="radio" name="exportMode" checked={exportMode === 'raw'} onChange={() => setExportMode('raw')} className="mt-1.5 w-4 h-4 text-black border-zinc-300 focus:ring-black" />
                   <div>
-                    <div className="font-bold text-zinc-900">RAW 파일만 복사</div>
-                    <div className="text-xs text-zinc-500 mt-1 leading-relaxed">보정을 위해 용량이 큰 원본(RAW) 파일만 복사합니다.</div>
+                    <div className="font-bold text-zinc-900">{t.exportRawTitle}</div>
+                    <div className="text-xs text-zinc-500 mt-1 leading-relaxed">{t.exportRawDescription}</div>
                   </div>
                 </label>
 
                 <label className={`flex items-start gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${exportMode === 'jpg' ? 'border-black bg-zinc-50' : 'border-zinc-200 hover:border-zinc-300'}`}>
                   <input type="radio" name="exportMode" checked={exportMode === 'jpg'} onChange={() => setExportMode('jpg')} className="mt-1.5 w-4 h-4 text-black border-zinc-300 focus:ring-black" />
                   <div>
-                    <div className="font-bold text-zinc-900">JPG 파일만 복사</div>
-                    <div className="text-xs text-zinc-500 mt-1 leading-relaxed">가벼운 JPG 파일만 추출합니다.</div>
+                    <div className="font-bold text-zinc-900">{t.exportJpgTitle}</div>
+                    <div className="text-xs text-zinc-500 mt-1 leading-relaxed">{t.exportJpgDescription}</div>
                   </div>
                 </label>
               </div>
@@ -579,13 +654,13 @@ function App() {
                   onClick={() => setShowExportModal(false)}
                   className="flex-1 py-3.5 px-4 rounded-xl font-bold text-zinc-600 bg-zinc-100 hover:bg-zinc-200 hover:text-black transition-colors"
                 >
-                  취소
+                  {t.cancel}
                 </button>
                 <button
                   onClick={handleExport}
                   className="flex-1 py-3.5 px-4 rounded-xl font-bold text-white bg-black hover:bg-zinc-800 shadow-lg transition-all active:scale-95"
                 >
-                  폴더 선택 및 복사
+                  {t.chooseFolderAndCopy}
                 </button>
               </div>
             </div>
